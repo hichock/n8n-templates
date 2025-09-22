@@ -1,0 +1,846 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4.1-mini\",\n  \"input\": [\n    {\n          \"type\": \"function_call_output\",\n          \"call_id\": \"{{ $('OPENAI - Send response2').item.json.output.last().call_id }}\",\n          \"output\": {{JSON.stringify($json.data.map(x=>x.document.pageContent).join(\"\\n\\n\"))}}\n        }\n  ],\n\"previous_response_id\":\"{{ $('OPENAI - Send response2').item.json.id}}\"\n}",
+        "options": {}
+      },
+      "id": "d4e2cc16-0f04-46ba-967b-6ee4a8b12985",
+      "name": "OpenAI - Submit tool response1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -32,
+        240
+      ],
+      "retryOnFail": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "SphXAX7rlwRLkiox",
+          "name": "Test club key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"model\":\"gpt-4.1-mini\",\n  \"instructions\": {{ JSON.stringify($json.prompt) }},\n\"input\":{{ JSON.stringify($json.text) }},\n   {{($('Set session').all()[0].json?.openai_response_id ? `\"previous_response_id\":`+JSON.stringify($('Set session').all()[0].json?.openai_response_id)+\",\" : \"\")  }}\n  \"temperature\":0.8,\n\"truncation\":\"auto\",\n  \"tools\": [{ \"type\":\"web_search_preview\"},{\"type\":\"function\", \n  \"name\": \"knowledge_base\",\n  \"description\": \"Retrieve data from knoledge base\",\n  \"strict\": true,\n  \"parameters\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"query\": {\n        \"type\": \"string\",\n        \"description\": \"Textual query for knowledge base\"\n      }\n    },\n    \"required\": [\n      \"query\"\n    ],\n    \"additionalProperties\": false\n  \n}}]\n}",
+        "options": {}
+      },
+      "id": "e10e4a9d-d3e5-4b59-a224-10e23b9b99d6",
+      "name": "OPENAI - Send response2",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1040,
+        112
+      ],
+      "typeVersion": 4.2,
+      "retryOnFail": false,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "SphXAX7rlwRLkiox",
+          "name": "Test club key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "3e7d1d87-ac89-4cf9-9ed1-d8ed1188838d",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        432
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "SphXAX7rlwRLkiox",
+          "name": "Test club key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "prompt": "={{ JSON.parse($('OPENAI - Send response2').item.json.output.last().arguments).query }}",
+        "topK": 10,
+        "includeDocumentMetadata": false,
+        "options": {}
+      },
+      "id": "c403e851-8975-49eb-90f9-7e32887dbc87",
+      "name": "Request Data from Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        240
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "zZgLLFkIE2kIiMAC",
+          "name": "Supabase account info+5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dc09a5b4-ff6a-4cee-b87e-35de7336ac05",
+              "name": "prompt",
+              "value": "=You are a business assistant\n \n- Always retrieve data from knowledge base using tool to answer user requests\n- Do not answer personal/sensitive data questions. Politely refuse if the user is offensive or off-topic. \n- Answer directly and concisely, starting only with factual, useful content: no introductions, thanks, or rephrasing unless explicitly requested.\n- Never assume prior steps, explanations, or context; do not invent or infer missing information.\n- Never validate, repeat, or comment on the user’s question as if it were a summary or explanation.  \n\nVERY IMPORTANT Identify language of last user message in the thread for yourself (don't post it). Answer using the same language.",
+              "type": "string"
+            },
+            {
+              "id": "e14c140e-1567-4a39-8f3b-b735bf9771c1",
+              "name": "text",
+              "value": "={{$('When chat message received').item.json.chatInput}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4b2ca488-c7af-4dbf-b36a-f3ef3e16aac5",
+      "name": "Set Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1200,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        240
+      ],
+      "id": "d8cffc63-f3e3-4eee-af2f-cb04e3f9c747",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1536,
+        -720
+      ],
+      "id": "02dd76ee-d623-4436-87cd-8917f31429d5",
+      "name": "When chat message received",
+      "webhookId": "5fea8e25-8d33-4aea-a71e-d47413a7dff1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "sessions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_id",
+              "keyValue": "={{ $json.sessionId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1808,
+        112
+      ],
+      "id": "3c9cda68-b82d-48d8-9ae7-35099da294a5",
+      "name": "Get a session",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "zZgLLFkIE2kIiMAC",
+          "name": "Supabase account info+5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{$json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1344,
+        112
+      ],
+      "id": "13856a68-00de-4025-9632-5de5b36ad09a",
+      "name": "Set session"
+    },
+    {
+      "parameters": {
+        "tableId": "sessions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('When chat message received').item.json.sessionId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        224
+      ],
+      "id": "c673b895-0963-4c6d-93a0-dfb2b45f215c",
+      "name": "Create session",
+      "credentials": {
+        "supabaseApi": {
+          "id": "zZgLLFkIE2kIiMAC",
+          "name": "Supabase account info+5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "22e87d2b-64e1-44d3-978d-d1fbd7649ff1",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "dateTime",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1648,
+        112
+      ],
+      "id": "b3b94d95-f79d-454c-b7f3-bcca004ecc41",
+      "name": "If session doesn't exist"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('OPENAI - Send response2').item.json.output.last().name }}",
+                    "rightValue": "knowledge_base",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e65f83fa-1764-4d88-b6f3-bc3a2de04e2a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "knowledge_base"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1d843ee8-b586-4561-9bac-275708f992a0",
+      "name": "Switch tools",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -704,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.last().type }}",
+                    "rightValue": "message",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e65f83fa-1764-4d88-b6f3-bc3a2de04e2a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "f5104358-57af-4ac7-9cb1-d09499cfaacb",
+                    "leftValue": "={{ $json.output.last().type }}",
+                    "rightValue": "function_call",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "function_call"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4bb8a612-3577-4e38-ae73-60afd91b554d",
+      "name": "Switch types",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -880,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "sessions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set session').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "openai_response_id",
+              "fieldValue": "={{ $('Edit Response').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        528,
+        112
+      ],
+      "id": "8433be9e-5d4e-4eb5-b535-2d18caa2f59c",
+      "name": "Update session",
+      "credentials": {
+        "supabaseApi": {
+          "id": "zZgLLFkIE2kIiMAC",
+          "name": "Supabase account info+5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "={{ $json.output.last().content[0].text }}",
+        "waitUserReply": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        352,
+        112
+      ],
+      "id": "6ca742db-6410-47c3-b3ba-f3962bb5b735",
+      "name": "Respond to Chat"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.openai.com/v1/responses",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"model\":\"gpt-4.1-mini\",\n  \"instructions\": {{ JSON.stringify($json.prompt) }},\n\"input\":{{ JSON.stringify($json.text) }},\n\"truncation\":\"auto\",\n  \"tools\": [{ \"type\":\"web_search_preview\"}, { \"type\":\"image_generation\"}]\n}",
+        "options": {}
+      },
+      "id": "f1daa093-64ed-431d-b967-a3dbda4ae0ee",
+      "name": "OPENAI - Send response",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1152,
+        -720
+      ],
+      "typeVersion": 4.2,
+      "retryOnFail": false,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "SphXAX7rlwRLkiox",
+          "name": "Test club key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dc09a5b4-ff6a-4cee-b87e-35de7336ac05",
+              "name": "prompt",
+              "value": "=You are simple assistant",
+              "type": "string"
+            },
+            {
+              "id": "e14c140e-1567-4a39-8f3b-b735bf9771c1",
+              "name": "text",
+              "value": "={{$('When chat message received').item.json.chatInput}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "12d5618d-0480-4706-b004-08ddd5159f3b",
+      "name": "Set Variables1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1360,
+        -720
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        112
+      ],
+      "id": "8e31bb06-07e1-4d59-906e-94e49889862c",
+      "name": "Edit Response"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "output[0].result",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -752,
+        -800
+      ],
+      "id": "3ffce5e7-873f-4cc2-870c-9944ee27b6cd",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.find(x=>x.type=='image_generation_call') }}",
+                    "rightValue": "message",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "e65f83fa-1764-4d88-b6f3-bc3a2de04e2a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "fde9ed2f-99ec-4a96-9253-273f6bf5f771",
+      "name": "Switch types1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -960,
+        -720
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "583383e6-7cc4-4c4b-aae5-17e9237fd331",
+              "name": "output",
+              "value": "={{ $('OPENAI - Send response').item.json.output.last().content[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -544,
+        -800
+      ],
+      "id": "cbf941de-1a58-4231-82e2-ef0afd86fb4a",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "583383e6-7cc4-4c4b-aae5-17e9237fd331",
+              "name": "output",
+              "value": "={{ $('OPENAI - Send response').item.json.output.last().content[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -752,
+        -656
+      ],
+      "id": "1d47197c-3173-4f26-9499-8a96dd106c41",
+      "name": "Edit Fields1"
+    }
+  ],
+  "connections": {
+    "OpenAI - Submit tool response1": {
+      "main": [
+        [
+          {
+            "node": "Edit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OPENAI - Send response2": {
+      "main": [
+        [
+          {
+            "node": "Switch types",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Request Data from Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Data from Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables": {
+      "main": [
+        [
+          {
+            "node": "OPENAI - Send response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Submit tool response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Set Variables1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a session": {
+      "main": [
+        [
+          {
+            "node": "If session doesn't exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set session": {
+      "main": [
+        [
+          {
+            "node": "Set Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create session": {
+      "main": [
+        [
+          {
+            "node": "Set session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If session doesn't exist": {
+      "main": [
+        [
+          {
+            "node": "Set session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch tools": {
+      "main": [
+        [
+          {
+            "node": "Request Data from Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch types": {
+      "main": [
+        [
+          {
+            "node": "Edit Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch tools",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Chat": {
+      "main": [
+        [
+          {
+            "node": "Update session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OPENAI - Send response": {
+      "main": [
+        [
+          {
+            "node": "Switch types1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables1": {
+      "main": [
+        [
+          {
+            "node": "OPENAI - Send response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch types1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "6a2a7715680b8313f7cb4676321c5baa46680adfb913072f089f2766f42e43bd"
+  }
+}
