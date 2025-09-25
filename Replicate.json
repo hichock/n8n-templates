@@ -1,0 +1,1199 @@
+{
+  "name": "Replicate",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -112,
+        -176
+      ],
+      "id": "279961bf-3b5a-4a4b-93b9-8469f271a971",
+      "name": "Wait4",
+      "webhookId": "a859ba1f-3dc5-4572-80d3-ec57c2201ed6"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.replicate.com/v1/predictions/{{$('Generate Image').item.json.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "a717de00-237e-41c6-97fc-af47722f9c0b",
+      "name": "Get Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        80,
+        -176
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d8d9b5c2-da45-40b3-bcda-354a24e9afb9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7f495a0a-8781-4d4f-a8e0-592190721892",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "succeeded",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "completed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        240,
+        -224
+      ],
+      "id": "4da12eed-ce93-4b48-bf35-e9cc8bc461bc",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/google/imagen-4/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"prompt\": {{ JSON.stringify($json.prompt) }},\n\"aspect_ratio\": \"{{ $json.aspect_ratio }}\"\n  }\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "ccd881ef-8cd9-4f01-93b4-ce336354444a",
+      "name": "Generate Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -304,
+        -176
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "### Image with Imagen in Replicate\n",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -928,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "13b1332d-e3ba-41cd-af80-d57d1865575d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        -176
+      ],
+      "id": "73a1b73f-2dcd-4672-8b6a-a80b3c94a99f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/imagen-4.0-generate-001",
+          "mode": "list",
+          "cachedResultName": "models/imagen-4.0-generate-001"
+        },
+        "prompt": "a cute cat eating a dinosaur ",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        80
+      ],
+      "id": "485e672a-55bf-4839-9d08-fffcd5b3653b",
+      "name": "Generate an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "pG56pY5XXsn8MpEc",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### Image with Imagen in Gemini\n",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -368,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "bf17dea2-b32d-4beb-b916-210fc506a094",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d8d9b5c2-da45-40b3-bcda-354a24e9afb9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7f495a0a-8781-4d4f-a8e0-592190721892",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "succeeded",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "completed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        192,
+        512
+      ],
+      "id": "703a97e6-5d48-4186-a3ce-b65da4ada9ae",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v2.1-master/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"mode\": \"standard\",\n    \"prompt\": {{ JSON.stringify($json.prompt) }},\n    \"duration\": {{$json.duration}}, \"aspect_ratio\": \"{{$json.aspect_ratio}}\" }\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "2637d3ae-2083-4393-99e1-5bdfc3828e0d",
+      "name": "Generate Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -352,
+        560
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        560
+      ],
+      "id": "509f8589-c06b-4de9-beaf-b8d8f61c974d",
+      "name": "Wait",
+      "webhookId": "a859ba1f-3dc5-4572-80d3-ec57c2201ed6"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.replicate.com/v1/predictions/{{$('Generate Video').item.json.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "7a8add87-f557-4671-b01a-aa688d415f20",
+      "name": "Get Generation1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        32,
+        560
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "### Video with Kling in Replicate",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        560
+      ],
+      "typeVersion": 1,
+      "id": "50c46099-12c0-4bd9-b68d-c3bed554ec35",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b86db08-e6ae-40b3-a61c-5942987d92d0",
+              "name": "prompt",
+              "value": "a cute cat eating a dinosaur ",
+              "type": "string"
+            },
+            {
+              "id": "9a8a4f43-8a7f-4d98-8fc8-fdb219901ee8",
+              "name": "aspect_ratio",
+              "value": "9:16",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        -176
+      ],
+      "id": "4aa3cac9-859d-473e-b2f8-9aa3aae373fd",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b86db08-e6ae-40b3-a61c-5942987d92d0",
+              "name": "prompt",
+              "value": "a cute cat eating a dinosaur ",
+              "type": "string"
+            },
+            {
+              "id": "9a8a4f43-8a7f-4d98-8fc8-fdb219901ee8",
+              "name": "duration",
+              "value": "5",
+              "type": "string"
+            },
+            {
+              "id": "2ddeb560-3c20-484b-bb8c-5de3ca731d79",
+              "name": "aspect_ratio",
+              "value": "9:16",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -528,
+        560
+      ],
+      "id": "6820acc9-edd9-46de-97fa-68e83acbc877",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        304
+      ],
+      "id": "acdc5dce-2da7-4ef4-a2a5-1dfc911145b9",
+      "name": "Wait5",
+      "webhookId": "a859ba1f-3dc5-4572-80d3-ec57c2201ed6"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.replicate.com/v1/predictions/{{$('Generate Image1').item.json.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "14bab730-d3e5-4701-9272-7b1642cdb544",
+      "name": "Get Generation2",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        64,
+        304
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d8d9b5c2-da45-40b3-bcda-354a24e9afb9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7f495a0a-8781-4d4f-a8e0-592190721892",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "succeeded",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "completed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        224,
+        256
+      ],
+      "id": "70777330-d293-4328-934b-1414e96efa52",
+      "name": "Switch4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedream-4/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"prompt\": {{ JSON.stringify($json.prompt) }},\n\"aspect_ratio\": \"{{ $json.aspect_ratio }}\"\n  }\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "339651e2-c6fb-4051-b544-09bcddadcd14",
+      "name": "Generate Image1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -320,
+        304
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b86db08-e6ae-40b3-a61c-5942987d92d0",
+              "name": "prompt",
+              "value": "a cute cat eating a dinosaur ",
+              "type": "string"
+            },
+            {
+              "id": "9a8a4f43-8a7f-4d98-8fc8-fdb219901ee8",
+              "name": "aspect_ratio",
+              "value": "9:16",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        304
+      ],
+      "id": "6dc2fbbd-100f-40a8-bab9-08f43d156ab0",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d8d9b5c2-da45-40b3-bcda-354a24e9afb9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7f495a0a-8781-4d4f-a8e0-592190721892",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "succeeded",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "completed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        224,
+        720
+      ],
+      "id": "f49e2f34-c9fe-4a80-9f80-94891b79e3d1",
+      "name": "Switch5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v2.1-master/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"mode\": \"standard\",\n    \"prompt\": {{ JSON.stringify($json.prompt) }},\n    \"duration\": {{$json.duration}}, \"aspect_ratio\": \"{{$json.aspect_ratio}}\",  \"start_image\":\"{{$json.start_image}}\" }\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "4a5a70a3-ecfd-4ef9-a0e5-10d162a2a129",
+      "name": "Generate Video2",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -320,
+        768
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        768
+      ],
+      "id": "ebdb6f18-bff2-4841-8500-817065af44a8",
+      "name": "Wait1",
+      "webhookId": "a859ba1f-3dc5-4572-80d3-ec57c2201ed6"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.replicate.com/v1/predictions/{{$('Generate Video2').item.json.id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "0491f4b4-b968-4080-8ef6-446217512ee4",
+      "name": "Get Generation3",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        64,
+        768
+      ],
+      "retryOnFail": false,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "j71MzLTvzw5hlA4X",
+          "name": "Replicate Mark"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b86db08-e6ae-40b3-a61c-5942987d92d0",
+              "name": "prompt",
+              "value": "a cute cat eating a dinosaur ",
+              "type": "string"
+            },
+            {
+              "id": "9a8a4f43-8a7f-4d98-8fc8-fdb219901ee8",
+              "name": "duration",
+              "value": "5",
+              "type": "string"
+            },
+            {
+              "id": "2ddeb560-3c20-484b-bb8c-5de3ca731d79",
+              "name": "aspect_ratio",
+              "value": "9:16",
+              "type": "string"
+            },
+            {
+              "id": "9b132f64-86b4-499d-97a6-f327242cc5c6",
+              "name": "start_image",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        768
+      ],
+      "id": "a83a83e7-abc6-4047-bbca-705708a536fd",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "content": "### Video with Kling and image in Replicate",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        768
+      ],
+      "typeVersion": 1,
+      "id": "1331d256-ff56-4c47-a48a-0d8d0d9e9aaa",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "### Image with Seedream in Replicate",
+        "height": 80
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        320
+      ],
+      "typeVersion": 1,
+      "id": "18225701-b7cb-4415-806b-252926f25061",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {
+    "Get Generation1": [
+      {
+        "json": {
+          "id": "kypsv75gxsrme0csfcnbv7cjmm",
+          "model": "kwaivgi/kling-v2.1-master",
+          "version": "hidden",
+          "input": {
+            "aspect_ratio": "9:16",
+            "duration": 5,
+            "mode": "standard",
+            "prompt": "a cute cat eating a dinosaur "
+          },
+          "logs": "Using model: kling-v2-1-master\nGenerating video...\nGenerated video in 144.9sec\nGenerated video ID: 799767795646595102\nDownloading 11910256 bytes\nDownloaded 11.36MB in 0.89sec\n",
+          "output": "https://replicate.delivery/xezq/rs8Wi37z0nqmLt8dQR3mHKD9orWefMLTkS7tKF58whmFPXYVA/tmpingk5fwg.mp4",
+          "data_removed": false,
+          "error": null,
+          "status": "succeeded",
+          "created_at": "2025-09-24T10:00:19.438Z",
+          "started_at": "2025-09-24T10:00:19.455022123Z",
+          "completed_at": "2025-09-24T10:02:45.555127202Z",
+          "urls": {
+            "cancel": "https://api.replicate.com/v1/predictions/kypsv75gxsrme0csfcnbv7cjmm/cancel",
+            "get": "https://api.replicate.com/v1/predictions/kypsv75gxsrme0csfcnbv7cjmm",
+            "stream": "https://stream.replicate.com/v1/files/bcwr-skzrn6piwktq2hm3aq22v7gjshmmp2uh2d6n5pbm3z77ri2tq6ga",
+            "web": "https://replicate.com/p/kypsv75gxsrme0csfcnbv7cjmm"
+          },
+          "metrics": {
+            "predict_time": 146.100105081
+          }
+        }
+      }
+    ],
+    "Get Generation3": [
+      {
+        "json": {
+          "id": "kypsv75gxsrme0csfcnbv7cjmm",
+          "model": "kwaivgi/kling-v2.1-master",
+          "version": "hidden",
+          "input": {
+            "aspect_ratio": "9:16",
+            "duration": 5,
+            "mode": "standard",
+            "prompt": "a cute cat eating a dinosaur "
+          },
+          "logs": "Using model: kling-v2-1-master\nGenerating video...\nGenerated video in 144.9sec\nGenerated video ID: 799767795646595102\nDownloading 11910256 bytes\nDownloaded 11.36MB in 0.89sec\n",
+          "output": "https://replicate.delivery/xezq/rs8Wi37z0nqmLt8dQR3mHKD9orWefMLTkS7tKF58whmFPXYVA/tmpingk5fwg.mp4",
+          "data_removed": false,
+          "error": null,
+          "status": "succeeded",
+          "created_at": "2025-09-24T10:00:19.438Z",
+          "started_at": "2025-09-24T10:00:19.455022123Z",
+          "completed_at": "2025-09-24T10:02:45.555127202Z",
+          "urls": {
+            "cancel": "https://api.replicate.com/v1/predictions/kypsv75gxsrme0csfcnbv7cjmm/cancel",
+            "get": "https://api.replicate.com/v1/predictions/kypsv75gxsrme0csfcnbv7cjmm",
+            "stream": "https://stream.replicate.com/v1/files/bcwr-skzrn6piwktq2hm3aq22v7gjshmmp2uh2d6n5pbm3z77ri2tq6ga",
+            "web": "https://replicate.com/p/kypsv75gxsrme0csfcnbv7cjmm"
+          },
+          "metrics": {
+            "predict_time": 146.100105081
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Wait4": {
+      "main": [
+        [
+          {
+            "node": "Get Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Generation": {
+      "main": [
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [],
+        [],
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [],
+        [],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Generation1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Generation1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Generate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait5": {
+      "main": [
+        [
+          {
+            "node": "Get Generation2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Generation2": {
+      "main": [
+        [
+          {
+            "node": "Switch4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch4": {
+      "main": [
+        [],
+        [],
+        [
+          {
+            "node": "Wait5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image1": {
+      "main": [
+        [
+          {
+            "node": "Wait5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Generate Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch5": {
+      "main": [
+        [],
+        [],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video2": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Get Generation3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Generation3": {
+      "main": [
+        [
+          {
+            "node": "Switch5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Generate Video2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "52a25dcf-fcd0-4ee3-b4b1-f82a07c7c848",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6a2a7715680b8313f7cb4676321c5baa46680adfb913072f089f2766f42e43bd"
+  },
+  "id": "xdc5EV7iZNKYpj4F",
+  "tags": []
+}
